@@ -25,6 +25,23 @@ function formatText(replacements: { [key in ReplacementKeys]?: string }):
   return formattedText;
 }
 
+function removeRootIndentation(text: string): string {
+  const lines = text.split("\n");
+
+  // Find the smallest amount of leading whitespace on any line
+  const rootIndentation = lines.reduce((minIndentation, line) => {
+    if (line.trim() === "") return minIndentation; // Ignore lines that only contain whitespace
+    const match = line.match(/^(\s*)/);
+    const leadingWhitespace = match ? match[0].length : 0;
+    return Math.min(minIndentation, leadingWhitespace);
+  }, Infinity);
+
+  // Remove the root indentation from every line
+  const unindentedLines = lines.map((line) => line.slice(rootIndentation));
+
+  return unindentedLines.join("\n");
+}
+
 export function activate(context: vscode.ExtensionContext) {
   console.log(
     'Congratulations, your extension "copy-paste-template" is now active!'
@@ -48,11 +65,19 @@ export function activate(context: vscode.ExtensionContext) {
       const startLine = selection.start.line + 1;
       const endLine = selection.end.line + 1;
 
+      const removeRootIndentationSetting = vscode.workspace
+        .getConfiguration("copy-paste-template")
+        .get("removeRootIndentation");
+
+      const undentedText = removeRootIndentationSetting
+        ? removeRootIndentation(text)
+        : text;
+
       const formattedText = formatText({
         filePath: relativeFilePath,
         startLine: startLine.toString(),
         endLine: endLine.toString(),
-        text: text,
+        text: undentedText,
       });
 
       if (formattedText) {
