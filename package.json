@@ -1,7 +1,7 @@
 {
   "name": "copy-paste-template",
-  "displayName": "copy-paste-template",
-  "description": "Code Clipper for ChatGPT is a minimalistic VSCode extension designed to streamline the process of sharing code snippets in ChatGPT sessions. With a focus on simplicity and efficiency, this tool allows developers to quickly format and copy code directly into ChatGPT with the proper markdown formatting and contextual information like the file path.",
+  "displayName": "LLM Code Clipper",
+  "description": "LLM Code Clipper is a VSCode extension designed to streamline the process of sharing code snippets for Language Learning Model (LLM) input. It allows developers to quickly format and copy code with the proper markdown formatting and contextual information like the file path.",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.89.0"
@@ -12,10 +12,25 @@
   "activationEvents": [],
   "main": "./dist/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "LLM Code Clipper",
+      "properties": {
+        "copy-paste-template.template": {
+          "type": "string",
+          "default": "{filePath} ({startLine}-{endLine})\n```\n{text}\n```\n",
+          "description": "The template for the formatted text. Use {filePath}, {startLine}, {endLine}, and {text} as placeholders for the file path, start line, end line, and selected text, respectively.\n\nExample:\n\n```\n{filePath} ({startLine}-{endLine})\n```\n\n```\n{text}\n```\n",
+          "editPresentation": "multilineText"
+        }
+      }
+    },
     "commands": [
       {
-        "command": "copy-paste-template.helloWorld",
-        "title": "Hello World"
+        "command": "copy-paste-template.copySelection",
+        "title": "Copy Selection for LLM Input"
+      },
+      {
+        "command": "copy-paste-template.copyFile",
+        "title": "Copy Entire File for LLM Input"
       }
     ]
   },
@@ -34,16 +49,16 @@
     "test": "vscode-test"
   },
   "devDependencies": {
-    "@types/vscode": "^1.89.0",
     "@types/mocha": "^10.0.6",
     "@types/node": "18.x",
+    "@types/vscode": "^1.89.0",
     "@typescript-eslint/eslint-plugin": "^7.7.1",
     "@typescript-eslint/parser": "^7.7.1",
-    "eslint": "^8.57.0",
-    "esbuild": "^0.20.2",
-    "npm-run-all": "^4.1.5",
-    "typescript": "^5.4.5",
     "@vscode/test-cli": "^0.0.9",
-    "@vscode/test-electron": "^2.3.9"
+    "@vscode/test-electron": "^2.3.9",
+    "esbuild": "0.20.2",
+    "eslint": "^8.57.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.4.5"
   }
 }

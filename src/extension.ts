@@ -1,26 +1,92 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+type ReplacementKeys = "filePath" | "startLine" | "endLine" | "text";
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "copy-paste-template" is now active!');
+function formatText(replacements: { [key in ReplacementKeys]?: string }):
+  | string
+  | undefined {
+  const template = vscode.workspace
+    .getConfiguration("copy-paste-template")
+    .get("template") as string | undefined;
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('copy-paste-template.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from copy-paste-template!');
-	});
+  if (!template) {
+    vscode.window.showInformationMessage("No template found in settings");
+    return;
+  }
 
-	context.subscriptions.push(disposable);
+  let formattedText = template;
+  Object.keys(replacements).forEach((placeholder) => {
+    const regex = new RegExp(`(?<!\\\\)\\{${placeholder}\\}`, "g");
+    formattedText = formattedText.replace(
+      regex,
+      replacements[placeholder as ReplacementKeys] || ""
+    );
+  });
+  return formattedText;
 }
 
-// This method is called when your extension is deactivated
+export function activate(context: vscode.ExtensionContext) {
+  console.log(
+    'Congratulations, your extension "copy-paste-template" is now active!'
+  );
+
+  let copySelectionCommand = vscode.commands.registerCommand(
+    "copy-paste-template.copySelection",
+    () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showInformationMessage("No editor is active");
+        return;
+      }
+
+      const selection = editor.selection;
+      const text = editor.document.getText(selection);
+
+      const filePath = editor.document.uri.fsPath;
+      const relativeFilePath = vscode.workspace.asRelativePath(filePath);
+
+      const startLine = selection.start.line + 1;
+      const endLine = selection.end.line + 1;
+
+      const formattedText = formatText({
+        filePath: relativeFilePath,
+        startLine: startLine.toString(),
+        endLine: endLine.toString(),
+        text: text,
+      });
+
+      if (formattedText) {
+        vscode.env.clipboard.writeText(formattedText);
+      }
+    }
+  );
+
+  let copyFileCommand = vscode.commands.registerCommand(
+    "copy-paste-template.copyFile",
+    () => {
+      const editor = vscode.window.activeTextEditor;
+      if (!editor) {
+        vscode.window.showInformationMessage("No editor is active");
+        return;
+      }
+
+      const text = editor.document.getText();
+
+      const filePath = editor.document.uri.fsPath;
+      const relativeFilePath = vscode.workspace.asRelativePath(filePath);
+
+      const formattedText = formatText({
+        filePath: relativeFilePath,
+        text: text,
+      });
+
+      if (formattedText) {
+        vscode.env.clipboard.writeText(formattedText);
+      }
+    }
+  );
+
+  context.subscriptions.push(copySelectionCommand, copyFileCommand);
+}
+
 export function deactivate() {}
