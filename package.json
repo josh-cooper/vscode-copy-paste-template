@@ -18,7 +18,7 @@
         "copy-paste-template.template": {
           "type": "string",
           "default": "{filePath} ({startLine}-{endLine})\n```\n{text}\n```\n",
-          "description": "The template for the formatted text. Use {filePath}, {startLine}, {endLine}, and {text} as placeholders for the file path, start line, end line, and selected text, respectively.\n\nExample:\n\n```\n{filePath} ({startLine}-{endLine})\n```\n\n```\n{text}\n```\n",
+          "markdownDescription": "This template determines the format of the text that is copied to the clipboard. You can use placeholders to include specific pieces of information:\n\n- `{filePath}`: The relative path of the file.\n- `{startLine}`: The line number where the selection starts.\n- `{endLine}`: The line number where the selection ends.\n- `{text}`: The selected text.\n\nFor example, the default template will result in a copy that includes the file path, the line numbers of the selection, and the selected text, each on a separate line. Note that the selected text is enclosed in triple backticks (\\`\\`\\`), which is the markdown syntax for a code block.\n\nYou can modify this template to suit your needs. Just make sure to keep the placeholders inside curly braces `{}`.",
           "editPresentation": "multilineText"
         }
       }
