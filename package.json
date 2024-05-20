@@ -4,6 +4,10 @@
   "description": "A VSCode extension designed to streamline the process of sharing code snippets for Language Learning Model (LLM) input. It allows developers to quickly format and copy code with the proper markdown formatting and contextual information like the file path.",
   "version": "0.0.1",
   "publisher": "josh-cooper",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/josh-cooper/vscode-copy-paste-template"
+  },
   "engines": {
     "vscode": "^1.89.0"
   },
