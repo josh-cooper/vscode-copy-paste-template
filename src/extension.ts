@@ -1,6 +1,22 @@
 import * as vscode from "vscode";
 
-type ReplacementKeys = "filePath" | "startLine" | "endLine" | "text";
+type TextReplacementKeys = "filePath" | "range" | "text";
+type RangeReplacementKeys = "startLine" | "startChar" | "endLine" | "endChar";
+type ReplacementKeys = TextReplacementKeys | RangeReplacementKeys;
+
+function formatString(
+  template: string,
+  replacements: { [key in ReplacementKeys]?: string }
+): string {
+  let formattedText = template;
+  Object.entries(replacements).forEach(([key, value]) => {
+    const regex = new RegExp(`(?<!\\\\)\\{${key}\\}`, "g");
+    formattedText = formattedText.replace(regex, value || "");
+  });
+
+  // Replace escaped placeholders with unescaped placeholders
+  return formattedText.replace(/\\{/g, "{");
+}
 
 function formatText(replacements: { [key in ReplacementKeys]?: string }):
   | string
@@ -8,21 +24,26 @@ function formatText(replacements: { [key in ReplacementKeys]?: string }):
   const template = vscode.workspace
     .getConfiguration("copy-paste-template")
     .get("template") as string | undefined;
-
   if (!template) {
     vscode.window.showInformationMessage("No template found in settings");
     return;
   }
 
-  let formattedText = template;
-  Object.keys(replacements).forEach((placeholder) => {
-    const regex = new RegExp(`(?<!\\\\)\\{${placeholder}\\}`, "g");
-    formattedText = formattedText.replace(
-      regex,
-      replacements[placeholder as ReplacementKeys] || ""
-    );
-  });
-  return formattedText;
+  return formatString(template, replacements);
+}
+
+function formatRange(replacements: { [key in ReplacementKeys]?: string }):
+  | string
+  | undefined {
+  const template = vscode.workspace
+    .getConfiguration("copy-paste-template")
+    .get("rangeTemplate") as string | undefined;
+  if (!template) {
+    vscode.window.showInformationMessage("No range template found in settings");
+    return;
+  }
+
+  return formatString(template, replacements);
 }
 
 function removeRootIndentation(text: string): string {
@@ -64,6 +85,8 @@ export function activate(context: vscode.ExtensionContext) {
 
       const startLine = selection.start.line + 1;
       const endLine = selection.end.line + 1;
+      const startChar = selection.start.character + 1;
+      const endChar = selection.end.character + 1;
 
       const removeRootIndentationSetting = vscode.workspace
         .getConfiguration("copy-paste-template")
@@ -73,10 +96,16 @@ export function activate(context: vscode.ExtensionContext) {
         ? removeRootIndentation(text)
         : text;
 
+      const formattedRange = formatRange({
+        startLine: startLine.toString(),
+        startChar: startChar.toString(),
+        endLine: endLine.toString(),
+        endChar: endChar.toString(),
+      });
+
       const formattedText = formatText({
         filePath: relativeFilePath,
-        startLine: startLine.toString(),
-        endLine: endLine.toString(),
+        range: formattedRange,
         text: undentedText,
       });
 
@@ -103,6 +132,7 @@ export function activate(context: vscode.ExtensionContext) {
       const formattedText = formatText({
         filePath: relativeFilePath,
         text: text,
+        range: "",
       });
 
       if (formattedText) {
