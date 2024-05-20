@@ -4,144 +4,112 @@ type TextReplacementKeys = "filePath" | "range" | "text";
 type RangeReplacementKeys = "startLine" | "startChar" | "endLine" | "endChar";
 type ReplacementKeys = TextReplacementKeys | RangeReplacementKeys;
 
+function getConfiguration(key: string): string | undefined {
+  return vscode.workspace
+    .getConfiguration("copy-paste-template")
+    .get<string>(key);
+}
+
+function replacePlaceholder(
+  template: string,
+  placeholder: string,
+  value: string
+): string {
+  const regex = new RegExp(`(?<!\\\\){${placeholder}}`, "g");
+  return template.replace(regex, value);
+}
+
 function formatString(
   template: string,
   replacements: { [key in ReplacementKeys]?: string }
 ): string {
   let formattedText = template;
   Object.entries(replacements).forEach(([key, value]) => {
-    const regex = new RegExp(`(?<!\\\\)\\{${key}\\}`, "g");
-    formattedText = formattedText.replace(regex, value || "");
+    formattedText = replacePlaceholder(formattedText, key, value || "");
   });
-
-  // Replace escaped placeholders with unescaped placeholders
-  return formattedText.replace(/\\{/g, "{");
+  return formattedText.replace(/{/g, "{");
 }
 
-function formatText(replacements: { [key in ReplacementKeys]?: string }):
-  | string
-  | undefined {
-  const template = vscode.workspace
-    .getConfiguration("copy-paste-template")
-    .get("template") as string | undefined;
+function formatTemplate(
+  key: string,
+  replacements: { [key in ReplacementKeys]?: string }
+): string | undefined {
+  const template = getConfiguration(key);
   if (!template) {
-    vscode.window.showInformationMessage("No template found in settings");
-    return;
+    vscode.window.showInformationMessage(`No template found for ${key}`);
+    return undefined;
   }
-
-  return formatString(template, replacements);
-}
-
-function formatRange(replacements: { [key in ReplacementKeys]?: string }):
-  | string
-  | undefined {
-  const template = vscode.workspace
-    .getConfiguration("copy-paste-template")
-    .get("rangeTemplate") as string | undefined;
-  if (!template) {
-    vscode.window.showInformationMessage("No range template found in settings");
-    return;
-  }
-
   return formatString(template, replacements);
 }
 
 function removeRootIndentation(text: string): string {
   const lines = text.split("\n");
-
-  // Find the smallest amount of leading whitespace on any line
-  const rootIndentation = lines.reduce((minIndentation, line) => {
-    if (line.trim() === "") return minIndentation; // Ignore lines that only contain whitespace
-    const match = line.match(/^(\s*)/);
-    const leadingWhitespace = match ? match[0].length : 0;
-    return Math.min(minIndentation, leadingWhitespace);
+  const rootIndentation = lines.reduce((min, line) => {
+    const leadingWhitespace = line.match(/^(\s*)/)?.[0].length || 0;
+    return line.trim() ? Math.min(min, leadingWhitespace) : min;
   }, Infinity);
+  return lines.map((line) => line.slice(rootIndentation)).join("\n");
+}
 
-  // Remove the root indentation from every line
-  const unindentedLines = lines.map((line) => line.slice(rootIndentation));
-
-  return unindentedLines.join("\n");
+function getActiveEditor(): vscode.TextEditor | undefined {
+  const editor = vscode.window.activeTextEditor;
+  if (!editor) {
+    vscode.window.showInformationMessage("No editor is active");
+  }
+  return editor;
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log(
-    'Congratulations, your extension "copy-paste-template" is now active!'
+  console.log('Extension "copy-paste-template" is now active!');
+  context.subscriptions.push(
+    vscode.commands.registerCommand(
+      "copy-paste-template.copySelection",
+      copySelection
+    )
   );
-
-  let copySelectionCommand = vscode.commands.registerCommand(
-    "copy-paste-template.copySelection",
-    () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor) {
-        vscode.window.showInformationMessage("No editor is active");
-        return;
-      }
-
-      const selection = editor.selection;
-      const text = editor.document.getText(selection);
-
-      const filePath = editor.document.uri.fsPath;
-      const relativeFilePath = vscode.workspace.asRelativePath(filePath);
-
-      const startLine = selection.start.line + 1;
-      const endLine = selection.end.line + 1;
-      const startChar = selection.start.character + 1;
-      const endChar = selection.end.character + 1;
-
-      const removeRootIndentationSetting = vscode.workspace
-        .getConfiguration("copy-paste-template")
-        .get("removeRootIndentation");
-
-      const undentedText = removeRootIndentationSetting
-        ? removeRootIndentation(text)
-        : text;
-
-      const formattedRange = formatRange({
-        startLine: startLine.toString(),
-        startChar: startChar.toString(),
-        endLine: endLine.toString(),
-        endChar: endChar.toString(),
-      });
-
-      const formattedText = formatText({
-        filePath: relativeFilePath,
-        range: formattedRange,
-        text: undentedText,
-      });
-
-      if (formattedText) {
-        vscode.env.clipboard.writeText(formattedText);
-      }
-    }
+  context.subscriptions.push(
+    vscode.commands.registerCommand("copy-paste-template.copyFile", copyFile)
   );
+}
 
-  let copyFileCommand = vscode.commands.registerCommand(
-    "copy-paste-template.copyFile",
-    () => {
-      const editor = vscode.window.activeTextEditor;
-      if (!editor) {
-        vscode.window.showInformationMessage("No editor is active");
-        return;
-      }
+function copySelection() {
+  const editor = getActiveEditor();
+  if (!editor) return;
 
-      const text = editor.document.getText();
+  const { document, selection } = editor;
+  const text = document.getText(selection);
+  const undentedText = getConfiguration("removeRootIndentation")
+    ? removeRootIndentation(text)
+    : text;
 
-      const filePath = editor.document.uri.fsPath;
-      const relativeFilePath = vscode.workspace.asRelativePath(filePath);
+  const replacements: { [key in ReplacementKeys]?: string } = {
+    filePath: vscode.workspace.asRelativePath(document.uri.fsPath),
+    range: formatTemplate("rangeTemplate", {
+      startLine: (selection.start.line + 1).toString(),
+      startChar: (selection.start.character + 1).toString(),
+      endLine: (selection.end.line + 1).toString(),
+      endChar: (selection.end.character + 1).toString(),
+    }),
+    text: undentedText,
+  };
 
-      const formattedText = formatText({
-        filePath: relativeFilePath,
-        text: text,
-        range: "",
-      });
+  const formattedText = formatTemplate("template", replacements);
+  if (formattedText) vscode.env.clipboard.writeText(formattedText);
+}
 
-      if (formattedText) {
-        vscode.env.clipboard.writeText(formattedText);
-      }
-    }
-  );
+function copyFile() {
+  const editor = getActiveEditor();
+  if (!editor) return;
 
-  context.subscriptions.push(copySelectionCommand, copyFileCommand);
+  const text = editor.document.getText();
+  const replacements: { [key in ReplacementKeys]?: string } = {
+    filePath: vscode.workspace.asRelativePath(editor.document.uri.fsPath),
+    text: text,
+    range: "",
+  };
+
+  const formattedText = formatTemplate("template", replacements);
+  if (formattedText) vscode.env.clipboard.writeText(formattedText);
 }
 
 export function deactivate() {}
