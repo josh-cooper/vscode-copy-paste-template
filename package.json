@@ -21,18 +21,21 @@
           "type": "string",
           "default": "{filePath}{range}\n```\n{text}\n```\n",
           "markdownDescription": "This template determines the format of the text that is copied to the clipboard. You can use placeholders to include specific pieces of information:\n\n- `{filePath}`: The relative path of the file.\n- `{range}`: The range of the selection, formatted according to the `copy-paste-template.rangeTemplate` configuration. This includes the start line, end line, start character, and end character of the selection.\n- `{text}`: The selected text.\n\nFor example, the default template will result in a copy that includes the file path, the range of the selection, and the selected text, each on a separate line. Note that the selected text is enclosed in triple backticks (\\`\\`\\`), which is the markdown syntax for a code block.\n\nYou can modify this template to suit your needs. Just make sure to keep the placeholders inside curly braces `{}`.",
-          "editPresentation": "multilineText"
+          "editPresentation": "multilineText",
+          "order": 1
         },
         "copy-paste-template.rangeTemplate": {
           "type": "string",
           "default": ":{startLine}:{startChar}-{endLine}:{endChar}",
           "markdownDescription": "This template determines the format of the range of the selection that is included in the copied text. You can use placeholders to include specific pieces of information:\n\n- `{startLine}`: The line number where the selection starts.\n- `{endLine}`: The line number where the selection ends.\n- `{startChar}`: The character position where the selection starts.\n- `{endChar}`: The character position where the selection ends.\n\nFor example, the default template will result in a range that includes the start line and character, and the end line and character, separated by a dash. If the selection starts and ends on the same line and character, this will be a single number.\n\nYou can modify this template to suit your needs. Just make sure to keep the placeholders inside curly braces `{}`.",
-          "editPresentation": "multilineText"
+          "editPresentation": "multilineText",
+          "order": 2
         },
         "copy-paste-template.removeRootIndentation": {
           "type": "boolean",
           "default": true,
-          "markdownDescription": "Remove any root indentation from the copied selection."
+          "markdownDescription": "Remove any root indentation from the copied selection.",
+          "order": 3
         }
       }
     },
