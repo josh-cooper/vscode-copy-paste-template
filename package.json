@@ -16,7 +16,7 @@
   "main": "./dist/extension.js",
   "contributes": {
     "configuration": {
-      "title": "LLM Code Clipper",
+      "title": "Copy Templater",
       "properties": {
         "copy-paste-template.template": {
           "type": "string",
