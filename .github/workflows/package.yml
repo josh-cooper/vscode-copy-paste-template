@@ -1,0 +1,54 @@
+name: Package and Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+env:
+  OUTPUT_NAME: copy-paste-template
+
+jobs:
+  build:
+    permissions: write-all
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16"
+          cache: "yarn"
+
+      - name: Install Dependencies
+        run: yarn install
+
+      - name: Extract version number
+        id: extract_version
+        run: echo "::set-output name=version::$(echo ${GITHUB_REF#refs/tags/v})"
+
+      - name: Package Extension
+        run: npx vsce package --out ${{ env.OUTPUT_NAME }}-${{ steps.extract_version.outputs.version }}.vsix
+
+      - name: Create Release
+        id: create_release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ github.ref }}
+          release_name: Release ${{ github.ref }}
+          draft: false
+          prerelease: false
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./${{ env.OUTPUT_NAME }}-${{ steps.extract_version.outputs.version }}.vsix
+          asset_name: ${{ env.OUTPUT_NAME }}-${{ steps.extract_version.outputs.version }}.vsix
+          asset_content_type: application/octet-stream

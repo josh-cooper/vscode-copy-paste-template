@@ -2,6 +2,12 @@
 
 Extension designed to conveniently template code snippets, particularly for Language Learning Model (LLM) input, facilitating quick formatting and copying of delimitted code snippets and contextual information like the file path.
 
+## Usage
+
+To use the extension, select a snippert and use the command palette (`Ctrl+Shift+P` or `Cmd+Shift+P` on Mac) and run the "Copy Formatted Selection" / `copy-paste-template.copySelection` command.
+
+Alternatively, run the "Copy Formatted Entire File" / `copy-paste-template.copyFile` to copy the entire file.
+
 ## Features
 
 -   Automatically formats code snippets with markdown to ensure compatibility with platforms requiring formatted input.
