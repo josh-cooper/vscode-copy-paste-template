@@ -5,6 +5,9 @@ on:
     tags:
       - "v*"
 
+env:
+  OUTPUT_NAME: copy-paste-template.vsix
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -22,7 +25,7 @@ jobs:
         run: yarn install
 
       - name: Package Extension
-        run: npx vsce package
+        run: npx vsce package --out ${{ env.OUTPUT_NAME }}
 
       - name: Create Release
         id: create_release
@@ -41,6 +44,6 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./copy-paste-template.vsix
-          asset_name: copy-template.vsix
+          asset_path: ./${{ env.OUTPUT_NAME }}
+          asset_name: ${{ env.OUTPUT_NAME }}
           asset_content_type: application/octet-stream
