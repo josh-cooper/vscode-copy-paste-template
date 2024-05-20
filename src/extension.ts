@@ -1,8 +1,13 @@
 import * as vscode from "vscode";
 
-type TextReplacementKeys = "filePath" | "range" | "text";
-type RangeReplacementKeys = "startLine" | "startChar" | "endLine" | "endChar";
-type ReplacementKeys = TextReplacementKeys | RangeReplacementKeys;
+type ReplacementKey =
+  | "filePath"
+  | "range"
+  | "text"
+  | "startLine"
+  | "startChar"
+  | "endLine"
+  | "endChar";
 
 function getConfiguration(key: string): string | undefined {
   return vscode.workspace
@@ -15,24 +20,23 @@ function replacePlaceholder(
   placeholder: string,
   value: string
 ): string {
+  // Ensure escaped placeholders are not replaced
   const regex = new RegExp(`(?<!\\\\){${placeholder}}`, "g");
   return template.replace(regex, value);
 }
 
 function formatString(
   template: string,
-  replacements: { [key in ReplacementKeys]?: string }
+  replacements: { [key in ReplacementKey]?: string }
 ): string {
-  let formattedText = template;
-  Object.entries(replacements).forEach(([key, value]) => {
-    formattedText = replacePlaceholder(formattedText, key, value || "");
-  });
-  return formattedText.replace(/{/g, "{");
+  return Object.entries(replacements).reduce((formatted, [key, value]) => {
+    return replacePlaceholder(formatted, key, value || "");
+  }, template);
 }
 
 function formatTemplate(
   key: string,
-  replacements: { [key in ReplacementKeys]?: string }
+  replacements: { [key in ReplacementKey]?: string }
 ): string | undefined {
   const template = getConfiguration(key);
   if (!template) {
@@ -55,6 +59,7 @@ function getActiveEditor(): vscode.TextEditor | undefined {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     vscode.window.showInformationMessage("No editor is active");
+    return undefined;
   }
   return editor;
 }
@@ -82,7 +87,7 @@ function copySelection() {
     ? removeRootIndentation(text)
     : text;
 
-  const replacements: { [key in ReplacementKeys]?: string } = {
+  const replacements: { [key in ReplacementKey]?: string } = {
     filePath: vscode.workspace.asRelativePath(document.uri.fsPath),
     range: formatTemplate("rangeTemplate", {
       startLine: (selection.start.line + 1).toString(),
@@ -102,7 +107,7 @@ function copyFile() {
   if (!editor) return;
 
   const text = editor.document.getText();
-  const replacements: { [key in ReplacementKeys]?: string } = {
+  const replacements: { [key in ReplacementKey]?: string } = {
     filePath: vscode.workspace.asRelativePath(editor.document.uri.fsPath),
     text: text,
     range: "",
