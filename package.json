@@ -42,11 +42,11 @@
     "commands": [
       {
         "command": "copy-paste-template.copySelection",
-        "title": "Copy Selection for LLM Input"
+        "title": "Copy Formatted Selection"
       },
       {
         "command": "copy-paste-template.copyFile",
-        "title": "Copy Entire File for LLM Input"
+        "title": "Copy Formatted Entire File"
       }
     ]
   },
