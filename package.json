@@ -13,8 +13,7 @@
   },
   "categories": [
     "Other",
-    "Programming Languages",
-    "Utilities"
+    "Programming Languages"
   ],
   "activationEvents": [],
   "main": "./dist/extension.js",
