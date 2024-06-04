@@ -9,13 +9,13 @@ type ReplacementKey =
   | "endLine"
   | "endChar";
 
-function getConfiguration(key: string): string | undefined {
+export function getConfiguration(key: string): string | undefined {
   return vscode.workspace
     .getConfiguration("copy-paste-template")
     .get<string>(key);
 }
 
-function replacePlaceholder(
+export function replacePlaceholder(
   template: string,
   placeholder: string,
   value: string
@@ -25,7 +25,7 @@ function replacePlaceholder(
   return template.replace(regex, value);
 }
 
-function formatString(
+export function formatString(
   template: string,
   replacements: { [key in ReplacementKey]?: string }
 ): string {
@@ -34,7 +34,7 @@ function formatString(
   }, template);
 }
 
-function formatTemplate(
+export function formatTemplate(
   key: string,
   replacements: { [key in ReplacementKey]?: string }
 ): string | undefined {
@@ -46,7 +46,7 @@ function formatTemplate(
   return formatString(template, replacements);
 }
 
-function removeRootIndentation(text: string): string {
+export function removeRootIndentation(text: string): string {
   const lines = text.split("\n");
   const rootIndentation = lines.reduce((min, line) => {
     const leadingWhitespace = line.match(/^(\s*)/)?.[0].length || 0;
@@ -55,7 +55,7 @@ function removeRootIndentation(text: string): string {
   return lines.map((line) => line.slice(rootIndentation)).join("\n");
 }
 
-function getActiveEditor(): vscode.TextEditor | undefined {
+export function getActiveEditor(): vscode.TextEditor | undefined {
   const editor = vscode.window.activeTextEditor;
   if (!editor) {
     vscode.window.showInformationMessage("No editor is active");
@@ -77,7 +77,7 @@ export function activate(context: vscode.ExtensionContext) {
   );
 }
 
-function copySelection() {
+export function copySelection() {
   const editor = getActiveEditor();
   if (!editor) return;
 
@@ -102,7 +102,7 @@ function copySelection() {
   if (formattedText) vscode.env.clipboard.writeText(formattedText);
 }
 
-function copyFile() {
+export function copyFile() {
   const editor = getActiveEditor();
   if (!editor) return;
 
